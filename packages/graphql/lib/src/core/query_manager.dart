@@ -34,7 +34,7 @@ class QueryManager {
 
     compositeSubscription.add(
       queryUpdateSubject.doOnData((event) {
-        print('REBROADCAST at ${DateTime.now().toIso8601String()}');
+        print('REBROADCAST at ${DateTime.now().toIso8601String()} with $event');
       }).listen((value) {
         maybeRebroadcastQueriesImpl(exclude: value);
       }),
