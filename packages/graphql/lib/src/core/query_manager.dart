@@ -462,10 +462,10 @@ class QueryManager {
   /// There is sometimes confusion on when this is called, but rebroadcasts are requested
   /// from every [addQueryResult] where `result.isNotLoading` as an [OnData] callback from [ObservableQuery].
 
-  void maybeRebroadcastQueries({
+  Future<void> maybeRebroadcastQueries({
     ObservableQuery<Object?>? exclude,
     bool force = false,
-  }) {
+  }) async {
     queryUpdateSubject.add(exclude);
   }
 

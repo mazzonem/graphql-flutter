@@ -93,7 +93,7 @@ class ObservableQuery<TParsed> {
   /// call [queryManager.maybeRebroadcastQueries] after all other [_onDataCallbacks]
   ///
   /// Automatically appended as an [OnData]
-  FutureOr<void> _maybeRebroadcast(QueryResult? result) =>
+  FutureOr<void> _maybeRebroadcast(QueryResult? result)  =>
       queryManager.maybeRebroadcastQueries(exclude: this);
 
   /// The most recently seen result from this operation's stream
