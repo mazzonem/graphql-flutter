@@ -242,7 +242,7 @@ class ObservableQuery<TParsed> {
   }
 
   /// Add a [result] to the [stream] unless it was created
-  /// before [lasestResult].
+  /// before [latestResult].
   ///
   /// Copies the [QueryResult.source] from the [latestResult]
   /// if it is set to `null`.

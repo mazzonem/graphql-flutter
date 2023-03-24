@@ -18,9 +18,9 @@ import 'package:graphql/src/exceptions.dart';
 import 'package:graphql/src/scheduler/scheduler.dart';
 
 import 'package:graphql/src/core/_query_write_handling.dart';
+import 'package:rxdart/rxdart.dart';
 
-bool Function(dynamic a, dynamic b) _deepEquals =
-    const DeepCollectionEquality().equals;
+bool Function(dynamic a, dynamic b) _deepEquals = const DeepCollectionEquality().equals;
 
 class QueryManager {
   QueryManager({
@@ -31,7 +31,17 @@ class QueryManager {
     scheduler = QueryScheduler(
       queryManager: this,
     );
+
+    compositeSubscription.add(
+      queryUpdateSubject.doOnData((event) {
+        print('REBROADCAST at ${DateTime.now().toIso8601String()}');
+      }).listen((value) {
+        maybeRebroadcastQueriesImpl(exclude: value);
+      }),
+    );
   }
+
+  final CompositeSubscription compositeSubscription = CompositeSubscription();
 
   final Link link;
   final GraphQLCache cache;
@@ -44,14 +54,19 @@ class QueryManager {
   int idCounter = 1;
 
   /// [ObservableQuery] registry
-  Map<String, ObservableQuery<Object?>> queries =
-      <String, ObservableQuery<Object?>>{};
+  Map<String, ObservableQuery<Object?>> queries = <String, ObservableQuery<Object?>>{};
 
   /// prevents rebroadcasting for some intensive bulk operation like [refetchSafeQueries]
   bool rebroadcastLocked = false;
 
-  ObservableQuery<TParsed> watchQuery<TParsed>(
-      WatchQueryOptions<TParsed> options) {
+  final queryUpdateSubject = PublishSubject<ObservableQuery<Object?>?>();
+
+  void dispose() {
+    compositeSubscription.dispose();
+    queryUpdateSubject.close();
+  }
+
+  ObservableQuery<TParsed> watchQuery<TParsed>(WatchQueryOptions<TParsed> options) {
     final ObservableQuery<TParsed> observableQuery = ObservableQuery<TParsed>(
       queryManager: this,
       options: options,
@@ -62,8 +77,7 @@ class QueryManager {
     return observableQuery;
   }
 
-  Stream<QueryResult<TParsed>> subscribe<TParsed>(
-      SubscriptionOptions<TParsed> options) async* {
+  Stream<QueryResult<TParsed>> subscribe<TParsed>(SubscriptionOptions<TParsed> options) async* {
     assert(
       options.fetchPolicy != FetchPolicy.cacheOnly,
       "Cannot subscribe with FetchPolicy.cacheOnly: $options",
@@ -152,13 +166,11 @@ class QueryManager {
     }
   }
 
-  Future<QueryResult<TParsed>> query<TParsed>(
-      QueryOptions<TParsed> options) async {
+  Future<QueryResult<TParsed>> query<TParsed>(QueryOptions<TParsed> options) async {
     final results = fetchQueryAsMultiSourceResult(_oneOffOpId, options);
     final eagerResult = results.eagerResult;
     final networkResult = results.networkResult;
-    if (options.fetchPolicy != FetchPolicy.cacheAndNetwork ||
-        eagerResult.isLoading) {
+    if (options.fetchPolicy != FetchPolicy.cacheAndNetwork || eagerResult.isLoading) {
       final result = networkResult ?? eagerResult;
       await result;
       maybeRebroadcastQueries();
@@ -171,8 +183,7 @@ class QueryManager {
     return eagerResult;
   }
 
-  Future<QueryResult<TParsed>> mutate<TParsed>(
-      MutationOptions<TParsed> options) async {
+  Future<QueryResult<TParsed>> mutate<TParsed>(MutationOptions<TParsed> options) async {
     final result = await fetchQuery(_oneOffOpId, options);
     // once the mutation has been process successfully, execute callbacks
     // before returning the results
@@ -198,8 +209,7 @@ class QueryManager {
     String queryId,
     BaseOptions<TParsed> options,
   ) async {
-    final MultiSourceResult<TParsed> allResults =
-        fetchQueryAsMultiSourceResult(queryId, options);
+    final MultiSourceResult<TParsed> allResults = fetchQueryAsMultiSourceResult(queryId, options);
     return allResults.networkResult ?? allResults.eagerResult;
   }
 
@@ -223,10 +233,9 @@ class QueryManager {
     return MultiSourceResult(
       options: options,
       eagerResult: eagerResult,
-      networkResult:
-          (shouldStopAtCache(options.fetchPolicy) && !eagerResult.isLoading)
-              ? null
-              : _resolveQueryOnNetwork(request, queryId, options),
+      networkResult: (shouldStopAtCache(options.fetchPolicy) && !eagerResult.isLoading)
+          ? null
+          : _resolveQueryOnNetwork(request, queryId, options),
     );
   }
 
@@ -308,8 +317,7 @@ class QueryManager {
 
       // if we haven't already resolved results optimistically,
       // we attempt to resolve the from the cache
-      if (shouldRespondEagerlyFromCache(options.fetchPolicy) &&
-          !queryResult.isOptimistic) {
+      if (shouldRespondEagerlyFromCache(options.fetchPolicy) && !queryResult.isOptimistic) {
         final data = cache.readQuery(request, optimistic: false);
         // we only push an eager query with data
         if (data != null) {
@@ -320,8 +328,7 @@ class QueryManager {
           );
         }
 
-        if (options.fetchPolicy == FetchPolicy.cacheOnly &&
-            queryResult.isLoading) {
+        if (options.fetchPolicy == FetchPolicy.cacheOnly && queryResult.isLoading) {
           queryResult = QueryResult(
             options: options,
             source: QueryResultSource.cache,
@@ -454,7 +461,15 @@ class QueryManager {
   /// **Note on internal implementation details**:
   /// There is sometimes confusion on when this is called, but rebroadcasts are requested
   /// from every [addQueryResult] where `result.isNotLoading` as an [OnData] callback from [ObservableQuery].
-  bool maybeRebroadcastQueries({
+
+  void maybeRebroadcastQueries({
+    ObservableQuery<Object?>? exclude,
+    bool force = false,
+  }) {
+    queryUpdateSubject.add(exclude);
+  }
+
+  bool maybeRebroadcastQueriesImpl({
     ObservableQuery<Object?>? exclude,
     bool force = false,
   }) {
@@ -462,9 +477,9 @@ class QueryManager {
       return false;
     }
 
-    final shouldBroadast = cache.shouldBroadcast(claimExecution: true);
+    final shouldBroadcast = cache.shouldBroadcast(claimExecution: true);
 
-    if (!shouldBroadast && !force) {
+    if (!shouldBroadcast && !force) {
       return false;
     }
 
@@ -501,8 +516,7 @@ class QueryManager {
     queries[observableQuery.queryId] = observableQuery;
   }
 
-  void closeQuery(ObservableQuery<Object?> observableQuery,
-      {bool fromQuery = false}) {
+  void closeQuery(ObservableQuery<Object?> observableQuery, {bool fromQuery = false}) {
     if (!fromQuery) {
       observableQuery.close(fromManager: true);
     }
