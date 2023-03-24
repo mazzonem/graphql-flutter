@@ -33,7 +33,7 @@ class QueryManager {
     );
 
     compositeSubscription.add(
-      queryUpdateSubject.throttleTime(Duration(milliseconds: 100)).doOnData((event) {
+      queryUpdateSubject.throttleTime(Duration(milliseconds: 200)).doOnData((event) {
         print('-----------REBROADCAST at ${DateTime.now().toIso8601String()}');
       }).listen((value) {
         maybeRebroadcastQueriesImpl();
