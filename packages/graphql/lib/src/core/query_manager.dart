@@ -33,10 +33,10 @@ class QueryManager {
     );
 
     compositeSubscription.add(
-      queryUpdateSubject.debounceTime(Duration(milliseconds: 300)).doOnData((event) {
-        print('REBROADCAST at ${DateTime.now().toIso8601String()} with $event');
+      queryUpdateSubject.throttleTime(Duration(milliseconds: 100)).doOnData((event) {
+        print('REBROADCAST at ${DateTime.now().toIso8601String()}');
       }).listen((value) {
-        maybeRebroadcastQueriesImpl(exclude: value);
+        maybeRebroadcastQueriesImpl();
       }),
     );
   }
@@ -469,7 +469,6 @@ class QueryManager {
     if (exclude == null && force == false) {
       queryUpdateSubject.add(exclude);
     } else {
-      print('Avoid subject');
       maybeRebroadcastQueriesImpl(exclude: exclude, force: force);
     }
   }
