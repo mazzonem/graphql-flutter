@@ -466,9 +466,10 @@ class QueryManager {
     ObservableQuery<Object?>? exclude,
     bool force = false,
   }) async {
-    if (exclude == null && force != false) {
+    if (exclude == null && force == false) {
       queryUpdateSubject.add(exclude);
     } else {
+      print('Avoid subject');
       maybeRebroadcastQueriesImpl(exclude: exclude, force: force);
     }
   }
