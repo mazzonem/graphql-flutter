@@ -33,9 +33,7 @@ class QueryManager {
     );
 
     compositeSubscription.add(
-      queryUpdateSubject.throttleTime(Duration(milliseconds: 200)).doOnData((event) {
-        print('-----------REBROADCAST at ${DateTime.now().toIso8601String()}');
-      }).listen((value) {
+      queryUpdateSubject.throttleTime(Duration(milliseconds: 250)).listen((value) {
         maybeRebroadcastQueriesImpl();
       }),
     );
@@ -467,7 +465,6 @@ class QueryManager {
     bool force = false,
   }) async {
     if (exclude == null && force == false) {
-      print('********');
       queryUpdateSubject.add(exclude);
     } else {
       maybeRebroadcastQueriesImpl(exclude: exclude, force: force);
