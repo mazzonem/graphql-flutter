@@ -474,14 +474,14 @@ class QueryManager {
     bool force = false,
   }) async {
     generalCountCalls = generalCountCalls + 1;
-    if (exclude == null && force == false) {
+    // if (exclude == null && force == false) {
       print('-> Ask to rebroadcast');
       count = count + 1;
       queryUpdateSubject.add(exclude);
-    } else {
-      print('-> Rebroadcast excluding $exclude and force $force');
-      maybeRebroadcastQueriesImpl(exclude: exclude, force: force);
-    }
+    // } else {
+    //   print('-> Rebroadcast excluding $exclude and force $force');
+    //   maybeRebroadcastQueriesImpl(exclude: exclude, force: force);
+    // }
   }
 
   bool maybeRebroadcastQueriesImpl({
