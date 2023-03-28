@@ -34,10 +34,17 @@ class QueryManager {
 
     compositeSubscription.add(
       queryUpdateSubject.throttleTime(Duration(milliseconds: 250)).listen((value) {
+        generalCountAvoided = generalCountAvoided + count - 1;
+
+        print('---> SUBJECT DO REBROADCAST avoided ${count - 1}, total $generalCountAvoided');
+        count = 0;
         maybeRebroadcastQueriesImpl();
       }),
     );
   }
+
+  int count = 0;
+  int generalCountAvoided = 0;
 
   final CompositeSubscription compositeSubscription = CompositeSubscription();
 
@@ -465,8 +472,11 @@ class QueryManager {
     bool force = false,
   }) async {
     if (exclude == null && force == false) {
+      print('-> Ask to rebroadcast');
+      count = count + 1;
       queryUpdateSubject.add(exclude);
     } else {
+      print('-> Rebroadcast excluding $exclude and force $force');
       maybeRebroadcastQueriesImpl(exclude: exclude, force: force);
     }
   }
