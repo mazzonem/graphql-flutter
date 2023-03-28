@@ -36,7 +36,8 @@ class QueryManager {
       queryUpdateSubject.throttleTime(Duration(milliseconds: 250)).listen((value) {
         generalCountAvoided = generalCountAvoided + count - 1;
 
-        print('---> SUBJECT DO REBROADCAST avoided ${count - 1}, total $generalCountAvoided');
+        print(
+            'At ${DateTime.now().toIso8601String()} ---> SUBJECT DO REBROADCAST avoided ${count - 1}, total $generalCountAvoided / $generalCountCalls');
         count = 0;
         maybeRebroadcastQueriesImpl();
       }),
@@ -45,6 +46,7 @@ class QueryManager {
 
   int count = 0;
   int generalCountAvoided = 0;
+  int generalCountCalls = 0;
 
   final CompositeSubscription compositeSubscription = CompositeSubscription();
 
@@ -471,6 +473,7 @@ class QueryManager {
     ObservableQuery<Object?>? exclude,
     bool force = false,
   }) async {
+    generalCountCalls = generalCountCalls + 1;
     if (exclude == null && force == false) {
       print('-> Ask to rebroadcast');
       count = count + 1;
