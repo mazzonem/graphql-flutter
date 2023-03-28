@@ -33,7 +33,7 @@ class QueryManager {
     );
 
     compositeSubscription.add(
-      queryUpdateSubject.throttleTime(Duration(milliseconds: 250)).listen((value) {
+      queryUpdateSubject.throttleTime(Duration(milliseconds: 500)).listen((value) {
         generalCountAvoided = generalCountAvoided + count - 1;
 
         print(
@@ -474,10 +474,11 @@ class QueryManager {
     bool force = false,
   }) async {
     generalCountCalls = generalCountCalls + 1;
+    //TODO
     // if (exclude == null && force == false) {
-      print('-> Ask to rebroadcast');
-      count = count + 1;
-      queryUpdateSubject.add(exclude);
+    print('-> Ask to rebroadcast');
+    count = count + 1;
+    queryUpdateSubject.add(exclude);
     // } else {
     //   print('-> Rebroadcast excluding $exclude and force $force');
     //   maybeRebroadcastQueriesImpl(exclude: exclude, force: force);
